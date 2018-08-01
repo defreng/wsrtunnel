@@ -1,0 +1,35 @@
+daemon off;
+worker_processes 1;
+
+events {
+    worker_connections 512;
+}
+
+http {
+    server {
+        listen              80;
+
+        location / {
+            proxy_pass          http://unix:/tmp/wsrtunnel.sock;
+            proxy_read_timeout  600s;
+        }
+
+        location = /_ws {
+        }
+    }
+
+    server {
+        listen              ${NGINX_WEBSOCKET_PORT} ssl;
+        server_name         ${NGINX_WEBSOCKET_HOST};
+        ssl_certificate     ${NGINX_WEBSOCKET_SSL_CERTIFICATE};
+        ssl_certificate_key ${NGINX_WEBSOCKET_SSL_CERTIFICATE_KEY};
+
+        location = /_ws {
+            proxy_pass          http://unix:/tmp/wsrtunnel.sock;
+            proxy_http_version  1.1;
+            proxy_set_header    Upgrade ${DOLLAR}http_upgrade;
+            proxy_set_header    Connection "upgrade";
+            proxy_read_timeout  43200s;
+        }
+    }
+}
